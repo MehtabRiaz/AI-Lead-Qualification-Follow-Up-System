@@ -1,0 +1,29 @@
+node_modules/
+.next/
+coverage/
+.pnpm-store/
+
+# Environment and secrets (never commit real values)
+.env
+.env.*
+!.env.example
+.vercel/
+
+# Local tooling / OS
+.DS_Store
+*.log
+*.tsbuildinfo
+
+# n8n local runtime data (credentials, executions)
+automation/n8n/data/
+
+# Test artifacts
+playwright-report/
+test-results/
+
+# Common secret/credential filenames
+credentials.json
+*.pem
+*.key
+*.p12
+*.pfx

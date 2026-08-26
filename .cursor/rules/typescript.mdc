@@ -1,0 +1,13 @@
+---
+description: Strict TypeScript and domain-layer conventions
+globs: "**/*.{ts,tsx}"
+alwaysApply: false
+---
+
+# TypeScript standards
+
+- Keep strict mode enabled; do not use `any` or unchecked casts.
+- Parse external input with Zod and derive types from schemas.
+- Keep qualification functions pure and integrations behind interfaces.
+- Use explicit result states for expected failures; never swallow errors.
+- Preserve missing business data as `null`, not zero or fabricated defaults.

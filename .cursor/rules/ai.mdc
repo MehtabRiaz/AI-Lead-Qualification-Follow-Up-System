@@ -1,0 +1,13 @@
+---
+description: Safety and cost rules for AI integrations
+globs: "src/**/*{ai,openai,prompt}*.ts"
+alwaysApply: false
+---
+
+# AI integration rules
+
+- Use the Responses API with strict JSON Schema structured output.
+- AI may summarize and extract evidence; deterministic code owns scores and routes.
+- Set model, prompt version, timeout, and output-token cap explicitly.
+- Validate output again locally and route failures to human review.
+- Do not send fields the prompt does not require.

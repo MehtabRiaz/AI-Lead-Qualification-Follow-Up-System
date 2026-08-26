@@ -1,0 +1,13 @@
+---
+description: Always-on project boundaries and verification requirements
+alwaysApply: true
+---
+
+# Core project rule
+
+- Read `AGENTS.md` and its required docs before editing.
+- Keep work inside the documented V1 scope.
+- Never expose internal qualification data to a lead.
+- Never commit secrets or real PII.
+- Run `pnpm check` and focused tests before finishing.
+- Record material architecture changes in `docs/DECISIONS.md`.

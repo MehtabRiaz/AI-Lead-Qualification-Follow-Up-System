@@ -1,0 +1,291 @@
+{
+  "name": "AI Lead Qualification & Follow-Up",
+  "nodes": [
+    {
+      "id": "5399ed3d-27a5-4fec-abb4-7e8b88b29fa7",
+      "name": "Receive lead submission",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [0, 0],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lead-intake",
+        "authentication": "none",
+        "responseMode": "onReceived",
+        "options": {
+          "noResponseBody": false,
+          "responseCode": {
+            "values": {
+              "responseCode": 200
+            }
+          },
+          "responseData": "{\"accepted\":true}",
+          "onlyRunIf": "={{ $json.headers[\"x-n8n-secret\"] === $env.N8N_SHARED_SECRET }}"
+        }
+      },
+      "webhookId": "f8c35e0b-48b5-4908-9990-cc69fcd3b37b"
+    },
+    {
+      "id": "b2fab00b-530d-4b79-a422-9f9ee453d8b9",
+      "name": "Process persisted submission",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [224, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.APP_BASE_URL }}/api/internal/process",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-n8n-secret",
+              "value": "={{ $env.N8N_SHARED_SECRET }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ { submissionId: $json.body.submissionId } }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "ede91dd2-767a-4168-a231-d9c4e2fe4002",
+      "name": "Check pending submissions every five minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [0, 224],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        },
+        "misfirePolicy": "coalesce",
+        "misfireGraceSeconds": 900
+      }
+    },
+    {
+      "id": "060fbbbc-bffe-4bc5-8bad-18d2bd7ba36e",
+      "name": "Load pending submissions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [224, 224],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.APP_BASE_URL }}/api/internal/pending",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-n8n-secret",
+              "value": "={{ $env.N8N_SHARED_SECRET }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "6015e757-dfe2-49d5-afde-80d3aadfcdd7",
+      "name": "Split pending submissions",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [448, 224],
+      "parameters": {
+        "fieldToSplitOut": "submissions",
+        "include": "noOtherFields",
+        "options": {}
+      }
+    },
+    {
+      "id": "9267f679-baa5-421f-9b57-4e06b9829d84",
+      "name": "Process recovered submission",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [672, 224],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.APP_BASE_URL }}/api/internal/process",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-n8n-secret",
+              "value": "={{ $env.N8N_SHARED_SECRET }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ { submissionId: $json.id } }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "94039c7c-d2c2-4697-a1f1-d122d1e0e32d",
+      "name": "Check due follow-ups hourly",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [0, 448],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1,
+              "triggerAtMinute": 0
+            }
+          ]
+        },
+        "misfirePolicy": "coalesce",
+        "misfireGraceSeconds": 7200
+      }
+    },
+    {
+      "id": "5e0b03f4-1578-4b84-aaed-7ca00bc66518",
+      "name": "Create due follow-up drafts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [224, 448],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.APP_BASE_URL }}/api/internal/follow-ups",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-n8n-secret",
+              "value": "={{ $env.N8N_SHARED_SECRET }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "ab1fa6dc-ada5-4f75-9e4b-e84aea0e08d1",
+      "name": "Optional Slack notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [448, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SLACK_WEBHOOK_URL }}",
+        "authentication": "none",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ text: `Lead ${$json.result?.decision?.classification || 'PENDING'} · route ${$json.result?.routing?.route || 'PENDING'} · submission ${$json.submissionId}` }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "disabled": true,
+      "notes": "Enable only after SLACK_WEBHOOK_URL is configured. Email remains draft-only in V1."
+    }
+  ],
+  "connections": {
+    "Receive lead submission": {
+      "main": [
+        [
+          {
+            "node": "Process persisted submission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check pending submissions every five minutes": {
+      "main": [
+        [
+          {
+            "node": "Load pending submissions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load pending submissions": {
+      "main": [
+        [
+          {
+            "node": "Split pending submissions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split pending submissions": {
+      "main": [
+        [
+          {
+            "node": "Process recovered submission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check due follow-ups hourly": {
+      "main": [
+        [
+          {
+            "node": "Create due follow-up drafts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process persisted submission": {
+      "main": [
+        [
+          {
+            "node": "Optional Slack notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "none"
+  },
+  "active": false
+}

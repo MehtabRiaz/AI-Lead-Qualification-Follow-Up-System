@@ -1,0 +1,223 @@
+import type { AiAnalysis, LeadInput } from "./schemas";
+
+const base: LeadInput = {
+  contactName: "Demo Contact",
+  workEmail: "contact@example.com",
+  companyName: "Example",
+  website: "https://example.com",
+  roleTitle: null,
+  seniority: "UNKNOWN",
+  industry: "OTHER",
+  employeeCount: null,
+  annualRevenueUsd: null,
+  monthlyAdSpendUsd: null,
+  serviceNeeded: "OTHER",
+  geography: "United States",
+  currentChallenge: "We need help improving our marketing performance.",
+  leadSource: "website_form",
+  timeline: "NO_DEADLINE",
+  message: null,
+};
+
+function analysis(
+  intentLevel: AiAnalysis["intentLevel"],
+  problemAwareness: AiAnalysis["problemAwareness"],
+  riskSignals: string[] = [],
+): AiAnalysis {
+  return {
+    problemSummary: "Paid acquisition is underperforming.",
+    intentSummary: "The prospect is evaluating help.",
+    intentLevel,
+    problemAwareness,
+    urgencySignals: [],
+    riskSignals,
+    recommendedAction: "Offer an appropriate discovery conversation.",
+    evidence: [
+      {
+        type: "problem",
+        sourceText: "Paid acquisition is underperforming.",
+        confidence: 0.95,
+      },
+    ],
+  };
+}
+
+export const testFixtures = [
+  {
+    name: "ScaleFlow",
+    lead: {
+      ...base,
+      companyName: "ScaleFlow",
+      website: "https://scaleflow.com",
+      workEmail: "sarah@scaleflow.com",
+      seniority: "VP",
+      industry: "B2B_SAAS",
+      annualRevenueUsd: 4_000_000,
+      monthlyAdSpendUsd: 30_000,
+      serviceNeeded: "PAID_ACQUISITION",
+      timeline: "THIS_WEEK",
+    },
+    ai: analysis("ACTIVE_EVALUATION", "QUANTIFIED_WITH_CONSEQUENCE"),
+    expected: { classification: "HOT", route: "PRIORITY_SALES" },
+  },
+  {
+    name: "BrightDesk",
+    lead: {
+      ...base,
+      companyName: "BrightDesk",
+      website: "https://brightdesk.com",
+      workEmail: "founder@brightdesk.com",
+      seniority: "FOUNDER",
+      industry: "B2B_SAAS",
+      annualRevenueUsd: 900_000,
+      monthlyAdSpendUsd: 4_000,
+      serviceNeeded: "PAID_ACQUISITION",
+    },
+    ai: analysis("ACTIVE_HELP", "CLEAR"),
+    expected: { classification: "WARM", route: "NORMAL_SALES_QUEUE" },
+  },
+  {
+    name: "Bella's Local Bakery",
+    lead: {
+      ...base,
+      companyName: "Bella's Local Bakery",
+      website: "https://bellasbakery.com",
+      workEmail: "bella@bellasbakery.com",
+      seniority: "FOUNDER",
+      industry: "LOCAL_BUSINESS",
+      annualRevenueUsd: 180_000,
+      monthlyAdSpendUsd: 400,
+      serviceNeeded: "OTHER",
+      geography: "Austin, US",
+    },
+    ai: analysis("ACTIVE_HELP", "CLEAR"),
+    expected: { classification: "LOW_FIT", route: "LOW_PRIORITY" },
+  },
+  {
+    name: "NovaCommerce",
+    lead: {
+      ...base,
+      companyName: "NovaCommerce",
+      website: "https://novacommerce.co.uk",
+      workEmail: "growth@novacommerce.co.uk",
+      seniority: "HEAD",
+      industry: "ECOMMERCE",
+      annualRevenueUsd: 8_000_000,
+      monthlyAdSpendUsd: 70_000,
+      serviceNeeded: "PAID_ACQUISITION",
+      geography: "United Kingdom",
+      timeline: "WITHIN_30_DAYS",
+    },
+    ai: analysis("ACTIVE_EVALUATION", "QUANTIFIED"),
+    expected: { classification: "HOT", route: "PRIORITY_SALES" },
+  },
+  {
+    name: "GrowthLoop AI",
+    lead: {
+      ...base,
+      companyName: "GrowthLoop AI",
+      website: "https://growthloop.ai",
+      workEmail: "hello@growthloop.ai",
+      industry: "B2B_SAAS",
+      serviceNeeded: "GROWTH_MARKETING",
+      timeline: "THIS_WEEK",
+    },
+    ai: null,
+    expected: {
+      classification: "UNCONFIRMED",
+      route: "PRIORITY_QUALIFICATION",
+    },
+  },
+  {
+    name: "TitanCommerce",
+    lead: {
+      ...base,
+      companyName: "TitanCommerce",
+      website: "https://titancommerce.com",
+      workEmail: "coordinator@titancommerce.com",
+      seniority: "COORDINATOR",
+      industry: "ECOMMERCE",
+      annualRevenueUsd: 25_000_000,
+      monthlyAdSpendUsd: 150_000,
+      serviceNeeded: "PAID_ACQUISITION",
+      timeline: "SIX_PLUS_MONTHS",
+    },
+    ai: analysis("RESEARCH", "CLEAR"),
+    expected: { classification: "WARM", route: "NURTURE" },
+  },
+  {
+    name: "Apex Commerce",
+    lead: {
+      ...base,
+      companyName: "Apex Commerce",
+      website: "https://apexcommerce.com",
+      workEmail: "ceo@apexcommerce.com",
+      seniority: "C_SUITE",
+      industry: "ECOMMERCE",
+      annualRevenueUsd: 12_000_000,
+      monthlyAdSpendUsd: 80_000,
+      serviceNeeded: "PAID_ACQUISITION",
+      timeline: "IMMEDIATE",
+    },
+    ai: analysis("ACTIVE_EVALUATION", "QUANTIFIED_WITH_CONSEQUENCE", [
+      "Requires guaranteed 5x ROAS within 30 days",
+    ]),
+    expected: { classification: "HUMAN_REVIEW", route: "HUMAN_REVIEW" },
+  },
+  {
+    name: "Suspicious Google",
+    lead: {
+      ...base,
+      companyName: "Google",
+      website: "https://google.com",
+      workEmail: "google.ceo@gmail.com",
+      seniority: "C_SUITE",
+      industry: "B2B_SAAS",
+      annualRevenueUsd: 1_000_000_000,
+      monthlyAdSpendUsd: 1_000_000,
+      serviceNeeded: "PAID_ACQUISITION",
+      timeline: "IMMEDIATE",
+    },
+    ai: analysis("ACTIVE_EVALUATION", "QUANTIFIED"),
+    expected: { classification: "SUSPICIOUS", route: "VERIFY_IDENTITY" },
+  },
+  {
+    name: "Duplicate ScaleFlow",
+    lead: {
+      ...base,
+      companyName: "ScaleFlow",
+      website: "https://scaleflow.com",
+      workEmail: "sarah@scaleflow.com",
+      seniority: "VP",
+      industry: "B2B_SAAS",
+      monthlyAdSpendUsd: 30_000,
+      serviceNeeded: "PAID_ACQUISITION",
+      timeline: "THIS_WEEK",
+    },
+    ai: analysis("ACTIVE_EVALUATION", "QUANTIFIED"),
+    duplicateState: "DUPLICATE_CONFIRMED" as const,
+    expected: { classification: "DUPLICATE", route: "UPDATE_EXISTING_RECORD" },
+  },
+  {
+    name: "OrbitLabs",
+    lead: {
+      ...base,
+      companyName: "OrbitLabs",
+      website: "https://orbitlabs.com",
+      workEmail: "marketing@orbitlabs.com",
+      seniority: "HEAD",
+      industry: "B2B_SAAS",
+      annualRevenueUsd: 3_500_000,
+      monthlyAdSpendUsd: 22_000,
+      serviceNeeded: "PAID_ACQUISITION",
+    },
+    ai: analysis("DIAGNOSTIC", "QUANTIFIED"),
+    expected: { classification: "HOT", route: "HOT_SALES_QUEUE" },
+  },
+] satisfies Array<{
+  name: string;
+  lead: LeadInput;
+  ai: AiAnalysis | null;
+  duplicateState?: "DUPLICATE_CONFIRMED";
+  expected: { classification: string; route: string };
+}>;
