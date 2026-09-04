@@ -14,33 +14,28 @@
         "responseMode": "onReceived",
         "options": {
           "noResponseBody": false,
-          "responseCode": {
-            "values": {
-              "responseCode": 200
-            }
-          },
+          "responseCode": { "values": { "responseCode": 200 } },
           "responseData": "{\"accepted\":true}",
-          "onlyRunIf": "={{ $json.headers[\"x-n8n-secret\"] === $env.N8N_SHARED_SECRET }}"
+          "onlyRunIf": "={{ $json.headers[\"x-n8n-secret\"] === ($vars.N8N_SHARED_SECRET || $env.N8N_SHARED_SECRET) }}"
         }
       },
       "webhookId": "f8c35e0b-48b5-4908-9990-cc69fcd3b37b"
     },
     {
       "id": "b2fab00b-530d-4b79-a422-9f9ee453d8b9",
-      "name": "Process persisted submission",
+      "name": "Prepare persisted submission",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
       "position": [224, 0],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.APP_BASE_URL }}/api/internal/process",
-        "authentication": "none",
+        "url": "={{ ($vars.APP_BASE_URL || $env.APP_BASE_URL) + '/api/internal/process' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "x-n8n-secret",
-              "value": "={{ $env.N8N_SHARED_SECRET }}"
+              "value": "={{ $vars.N8N_SHARED_SECRET || $env.N8N_SHARED_SECRET }}"
             }
           ]
         },
@@ -48,9 +43,7 @@
         "contentType": "json",
         "specifyBody": "json",
         "jsonBody": "={{ { submissionId: $json.body.submissionId } }}",
-        "options": {
-          "timeout": 30000
-        }
+        "options": { "timeout": 30000 }
       },
       "retryOnFail": true,
       "maxTries": 3,
@@ -61,18 +54,9 @@
       "name": "Check pending submissions every five minutes",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.4,
-      "position": [0, 224],
+      "position": [0, 320],
       "parameters": {
-        "rule": {
-          "interval": [
-            {
-              "field": "minutes",
-              "minutesInterval": 5
-            }
-          ]
-        },
-        "misfirePolicy": "coalesce",
-        "misfireGraceSeconds": 900
+        "rule": { "interval": [{ "field": "minutes", "minutesInterval": 5 }] }
       }
     },
     {
@@ -80,23 +64,20 @@
       "name": "Load pending submissions",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
-      "position": [224, 224],
+      "position": [224, 320],
       "parameters": {
         "method": "GET",
-        "url": "={{ $env.APP_BASE_URL }}/api/internal/pending",
-        "authentication": "none",
+        "url": "={{ ($vars.APP_BASE_URL || $env.APP_BASE_URL) + '/api/internal/pending' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "x-n8n-secret",
-              "value": "={{ $env.N8N_SHARED_SECRET }}"
+              "value": "={{ $vars.N8N_SHARED_SECRET || $env.N8N_SHARED_SECRET }}"
             }
           ]
         },
-        "options": {
-          "timeout": 30000
-        }
+        "options": { "timeout": 30000 }
       },
       "retryOnFail": true,
       "maxTries": 3,
@@ -107,7 +88,7 @@
       "name": "Split pending submissions",
       "type": "n8n-nodes-base.splitOut",
       "typeVersion": 1,
-      "position": [448, 224],
+      "position": [448, 320],
       "parameters": {
         "fieldToSplitOut": "submissions",
         "include": "noOtherFields",
@@ -116,20 +97,19 @@
     },
     {
       "id": "9267f679-baa5-421f-9b57-4e06b9829d84",
-      "name": "Process recovered submission",
+      "name": "Prepare recovered submission",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
-      "position": [672, 224],
+      "position": [672, 320],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.APP_BASE_URL }}/api/internal/process",
-        "authentication": "none",
+        "url": "={{ ($vars.APP_BASE_URL || $env.APP_BASE_URL) + '/api/internal/process' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "x-n8n-secret",
-              "value": "={{ $env.N8N_SHARED_SECRET }}"
+              "value": "={{ $vars.N8N_SHARED_SECRET || $env.N8N_SHARED_SECRET }}"
             }
           ]
         },
@@ -137,9 +117,115 @@
         "contentType": "json",
         "specifyBody": "json",
         "jsonBody": "={{ { submissionId: $json.id } }}",
+        "options": { "timeout": 30000 }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "22a9e5a4-4904-4d40-9268-b2461cfb8a11",
+      "name": "AI analysis required?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [896, 80],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c7e3338b-d52c-4386-9b36-2d4dddb5e5e8",
+              "leftValue": "={{ $json.analysisRequired }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "6202769e-9693-42cf-bf5b-f221aae5d95a",
+      "name": "Analyze qualitative lead signals",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [1120, 0],
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ JSON.stringify($json.analysisInput) }}",
+        "hasOutputParser": true,
         "options": {
-          "timeout": 30000
+          "systemMessage": "Analyze only the supplied lead information. Extract the stated problem, buying intent, urgency signals, risk evidence, and a concise recommended action. Never infer missing revenue, spend, headcount, identity, authority, or geography. Never calculate or recommend a numerical lead score. Cite short evidence from the supplied text for qualitative claims. Return only the required structured output.",
+          "maxIterations": 1
         }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "c4e57e40-da80-4d26-97b8-3b82cfe1da53",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [1056, 208],
+      "parameters": {
+        "modelName": {
+          "__rl": true,
+          "value": "gpt-5-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-5-mini"
+        },
+        "responsesApiEnabled": true,
+        "options": {
+          "maxTokens": 700,
+          "temperature": 0.1,
+          "timeout": 15000,
+          "maxRetries": 2
+        }
+      }
+    },
+    {
+      "id": "aaf70ce7-d5db-4d3c-bbf7-acdeccb10da0",
+      "name": "Lead analysis output schema",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [1248, 208],
+      "parameters": {
+        "jsonSchemaExample": "{\"problemSummary\":\"Concise stated problem\",\"intentSummary\":\"Concise buying-intent summary\",\"intentLevel\":\"ACTIVE_HELP\",\"problemAwareness\":\"CLEAR\",\"urgencySignals\":[],\"riskSignals\":[],\"recommendedAction\":\"Concise suggested next action\",\"evidence\":[{\"type\":\"problem\",\"sourceText\":\"Short exact evidence from supplied text\",\"confidence\":0.8}]}"
+      }
+    },
+    {
+      "id": "6b990588-f439-4bbb-a391-e66f4719ec8e",
+      "name": "Complete AI-qualified submission",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [1408, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($vars.APP_BASE_URL || $env.APP_BASE_URL) + '/api/internal/complete' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-n8n-secret",
+              "value": "={{ $vars.N8N_SHARED_SECRET || $env.N8N_SHARED_SECRET }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ { submissionId: $('AI analysis required?').item.json.submissionId, ...($json.output && typeof $json.output === 'object' ? { aiAnalysis: $json.output } : { aiFailureReason: 'AI_ANALYSIS_UNAVAILABLE' }) } }}",
+        "options": { "timeout": 30000 }
       },
       "retryOnFail": true,
       "maxTries": 3,
@@ -150,19 +236,13 @@
       "name": "Check due follow-ups hourly",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.4,
-      "position": [0, 448],
+      "position": [0, 576],
       "parameters": {
         "rule": {
           "interval": [
-            {
-              "field": "hours",
-              "hoursInterval": 1,
-              "triggerAtMinute": 0
-            }
+            { "field": "hours", "hoursInterval": 1, "triggerAtMinute": 0 }
           ]
-        },
-        "misfirePolicy": "coalesce",
-        "misfireGraceSeconds": 7200
+        }
       }
     },
     {
@@ -170,23 +250,20 @@
       "name": "Create due follow-up drafts",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
-      "position": [224, 448],
+      "position": [224, 576],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.APP_BASE_URL }}/api/internal/follow-ups",
-        "authentication": "none",
+        "url": "={{ ($vars.APP_BASE_URL || $env.APP_BASE_URL) + '/api/internal/follow-ups' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "x-n8n-secret",
-              "value": "={{ $env.N8N_SHARED_SECRET }}"
+              "value": "={{ $vars.N8N_SHARED_SECRET || $env.N8N_SHARED_SECRET }}"
             }
           ]
         },
-        "options": {
-          "timeout": 30000
-        }
+        "options": { "timeout": 30000 }
       },
       "retryOnFail": true,
       "maxTries": 3,
@@ -197,18 +274,15 @@
       "name": "Optional Slack notification",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
-      "position": [448, 0],
+      "position": [1664, 80],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.SLACK_WEBHOOK_URL }}",
-        "authentication": "none",
+        "url": "={{ $vars.SLACK_WEBHOOK_URL || $env.SLACK_WEBHOOK_URL }}",
         "sendBody": true,
         "contentType": "raw",
         "rawContentType": "application/json",
         "body": "={{ JSON.stringify({ text: `Lead ${$json.result?.decision?.classification || 'PENDING'} · route ${$json.result?.routing?.route || 'PENDING'} · submission ${$json.submissionId}` }) }}",
-        "options": {
-          "timeout": 10000
-        }
+        "options": { "timeout": 10000 }
       },
       "disabled": true,
       "notes": "Enable only after SLACK_WEBHOOK_URL is configured. Email remains draft-only in V1."
@@ -217,68 +291,87 @@
   "connections": {
     "Receive lead submission": {
       "main": [
-        [
-          {
-            "node": "Process persisted submission",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Prepare persisted submission", "type": "main", "index": 0 }]
+      ]
+    },
+    "Prepare persisted submission": {
+      "main": [
+        [{ "node": "AI analysis required?", "type": "main", "index": 0 }]
       ]
     },
     "Check pending submissions every five minutes": {
       "main": [
-        [
-          {
-            "node": "Load pending submissions",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Load pending submissions", "type": "main", "index": 0 }]
       ]
     },
     "Load pending submissions": {
       "main": [
-        [
-          {
-            "node": "Split pending submissions",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Split pending submissions", "type": "main", "index": 0 }]
       ]
     },
     "Split pending submissions": {
       "main": [
+        [{ "node": "Prepare recovered submission", "type": "main", "index": 0 }]
+      ]
+    },
+    "Prepare recovered submission": {
+      "main": [
+        [{ "node": "AI analysis required?", "type": "main", "index": 0 }]
+      ]
+    },
+    "AI analysis required?": {
+      "main": [
         [
           {
-            "node": "Process recovered submission",
+            "node": "Analyze qualitative lead signals",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [{ "node": "Optional Slack notification", "type": "main", "index": 0 }]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Analyze qualitative lead signals",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lead analysis output schema": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Analyze qualitative lead signals",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze qualitative lead signals": {
+      "main": [
+        [
+          {
+            "node": "Complete AI-qualified submission",
             "type": "main",
             "index": 0
           }
         ]
+      ]
+    },
+    "Complete AI-qualified submission": {
+      "main": [
+        [{ "node": "Optional Slack notification", "type": "main", "index": 0 }]
       ]
     },
     "Check due follow-ups hourly": {
       "main": [
-        [
-          {
-            "node": "Create due follow-up drafts",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Process persisted submission": {
-      "main": [
-        [
-          {
-            "node": "Optional Slack notification",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Create due follow-up drafts", "type": "main", "index": 0 }]
       ]
     }
   },

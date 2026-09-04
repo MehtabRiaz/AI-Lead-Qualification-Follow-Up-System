@@ -57,3 +57,33 @@ test("submission receipt is idempotent and hides internal output", async ({
   expect(firstBody.score).toBeUndefined();
   expect(firstBody.route).toBeUndefined();
 });
+
+test("successful form submission resets safely and shows its receipt", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByLabel("Name").fill("Form Reset Test");
+  await page.getByLabel("Work email").fill("form-reset-test@example.dev");
+  await page
+    .getByRole("textbox", { name: "Company", exact: true })
+    .fill("Form Reset Test Company");
+  await page.getByLabel("Website").fill("https://example.dev");
+  await page.getByLabel("Role/title").fill("VP Marketing");
+  await page.getByLabel("Seniority").selectOption("VP");
+  await page.getByLabel("Company type").selectOption("B2B_SAAS");
+  await page.getByLabel("Service needed").selectOption("PAID_ACQUISITION");
+  await page.getByLabel("Employees").fill("85");
+  await page.getByLabel("Annual revenue (USD)").fill("8000000");
+  await page.getByLabel("Monthly ad spend (USD)").fill("30000");
+  await page.getByLabel("Primary market").fill("United States");
+  await page.getByLabel("Decision timeline").selectOption("WITHIN_30_DAYS");
+  await page
+    .getByLabel("Current challenge")
+    .fill("Customer acquisition cost increased 40% this quarter.");
+
+  await page.getByRole("button", { name: "Submit request" }).click();
+
+  await expect(page.getByText(/Request received\. Reference:/)).toBeVisible();
+  await expect(page.getByText(/Cannot read properties of null/)).toHaveCount(0);
+  await expect(page.getByLabel("Name")).toHaveValue("");
+});

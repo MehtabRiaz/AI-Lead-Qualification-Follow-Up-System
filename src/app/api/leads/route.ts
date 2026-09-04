@@ -36,8 +36,15 @@ export async function POST(request: Request) {
     if (!accepted.replay) {
       try {
         const notified = await notifyN8n(accepted.record.id);
-        if (!notified && getEnv().DATA_MODE === "demo")
-          await getLeadService().processSubmission(accepted.record.id);
+        if (!notified && getEnv().DATA_MODE === "demo") {
+          const prepared = await getLeadService().prepareSubmission(
+            accepted.record.id,
+          );
+          if (prepared.analysisRequired)
+            await getLeadService().completeSubmission(accepted.record.id, {
+              aiFailureReason: "AI_ANALYSIS_UNAVAILABLE",
+            });
+        }
       } catch {
         // Persistence already succeeded; the recovery workflow can process this later.
       }

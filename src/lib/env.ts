@@ -11,8 +11,6 @@ const envSchema = z.object({
   DATA_MODE: z.enum(["demo", "supabase"]).default("demo"),
   SUPABASE_URL: optionalString(z.string().url()),
   SUPABASE_SERVICE_ROLE_KEY: optionalString(z.string().min(1)),
-  OPENAI_API_KEY: optionalString(z.string().min(1)),
-  OPENAI_MODEL: z.string().min(1).default("gpt-4o-mini"),
   N8N_WEBHOOK_URL: optionalString(z.string().url()),
   N8N_SHARED_SECRET: z.string().min(16).default("development-only-secret"),
   SLACK_WEBHOOK_URL: optionalString(z.string().url()),

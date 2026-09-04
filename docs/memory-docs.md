@@ -13,9 +13,9 @@ Update the narrowest owning document. Do not copy the same rule into multiple fi
 
 ### Purpose and ownership
 
-The single n8n workflow is named **AI Lead Qualification & Follow-Up**. It coordinates persisted lead processing, recovery, and follow-up drafting. It does not validate leads, calculate scores, interpret AI output, or choose routes. Those business decisions remain in the application's pure qualification domain.
+The single n8n workflow is named **AI Lead Qualification & Follow-Up**. It coordinates persisted lead processing, recovery, n8n Agent-based qualitative analysis, and follow-up drafting. It does not validate leads, calculate scores, or choose routes. Those business decisions remain in the application's pure qualification domain.
 
-- Remote workflow ID: `D0IeARy4XuQq48lm`
+- Remote workflow ID: `PmnynmVrAruuYrsK`
 - Production webhook path: `/webhook/lead-intake`
 - Portable source: `automation/n8n/workflows/ai-lead-qualification-follow-up.json`
 - Application-facing API: `src/app/api/leads/route.ts`
@@ -33,9 +33,10 @@ Lead form or API client
   -> hash the idempotency key
   -> persist the submission as PENDING_AUTOMATION
   -> POST { submissionId } to the n8n intake webhook
-  -> n8n calls POST /api/internal/process
-  -> application runs duplicate checks, deterministic gates, optional AI analysis,
-     scoring, risk, urgency, and routing
+  -> n8n calls POST /api/internal/process for deterministic preparation
+  -> eligible records pass through the n8n AI Agent and structured output parser
+  -> n8n calls POST /api/internal/complete with agent output
+  -> application validates the output and runs scoring, risk, urgency, and routing
   -> application persists the qualification result and follow-up checkpoints
   -> n8n optionally sends a minimal Slack notification
 ```
@@ -77,7 +78,7 @@ x-n8n-secret: shared secret
 {"submissionId":"submission UUID"}
 ```
 
-The webhook runs only when `x-n8n-secret` matches `N8N_SHARED_SECRET`. It responds immediately, then **Process persisted submission** calls:
+The webhook runs only when `x-n8n-secret` matches `N8N_SHARED_SECRET`. It responds immediately, then **Prepare persisted submission** calls:
 
 ```http
 POST {APP_BASE_URL}/api/internal/process
@@ -86,7 +87,7 @@ x-n8n-secret: shared secret
 {"submissionId":"submission UUID"}
 ```
 
-The protected application endpoint validates the body, loads the persisted record, avoids reprocessing terminal records, and returns the internal result:
+The protected preparation endpoint validates the body, loads the persisted record, avoids reprocessing terminal records, and returns either a completed deterministic result or `analysisRequired: true` with the minimal qualitative analysis input. Eligible records run through **Analyze qualitative lead signals**, **OpenAI Chat Model**, and **Lead analysis output schema**. n8n then calls `/api/internal/complete`; the application validates the agent output with Zod and completes deterministic qualification.
 
 ```json
 {
@@ -96,7 +97,7 @@ The protected application endpoint validates the body, loads the persisted recor
 }
 ```
 
-Each application HTTP call is configured for three attempts with a two-second delay and a 30-second timeout.
+Each application HTTP call is configured for three attempts with a two-second delay and a 30-second timeout. Agent failure or missing structured output is completed with the sanitized `AI_ANALYSIS_UNAVAILABLE` outcome and routes to human review.
 
 ### Recovery branch
 
@@ -173,9 +174,10 @@ The internal dashboard reads recent persisted submissions and qualification resu
 - [ ] Persist workflow-run attempts, retryable failures, errors, timings, and recovery outcomes in the audit trail.
 - [ ] Make qualification-result, activity, and follow-up persistence atomic or otherwise prove safe recovery from partial writes.
 - [ ] Expand Zod validation across remaining external boundaries and database fields.
-- [ ] Verify OpenAI structured analysis and safe fallback behavior with a configured development credential.
+- [ ] Connect an OpenAI credential to the n8n Chat Model and verify structured analysis and safe fallback behavior.
 - [ ] Verify optional Slack delivery is exactly once and does not expose unnecessary lead PII or internal AI evidence.
 - [ ] Run browser E2E tests and the full `pnpm check` gate after the behavior gaps are closed.
-- [x] Import and publish the combined workflow in the target n8n instance.
+- [x] Create the validated combined workflow draft in the target n8n instance.
+- [ ] Publish the combined workflow after the application contract, variables, and OpenAI credential are deployed.
 - [ ] Configure the published workflow's application environment, then run the production deployment smoke test across Vercel, Railway, Supabase, and n8n.
 - [ ] Update the project specification checklists to reflect verified completion, then record the demo and publish an evidence-based case study.

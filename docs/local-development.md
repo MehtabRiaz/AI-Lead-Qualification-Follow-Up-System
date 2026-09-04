@@ -57,8 +57,6 @@ DATA_MODE=demo
 NEXT_PUBLIC_DEMO_MODE=true
 SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
-OPENAI_API_KEY=
-OPENAI_MODEL=gpt-4o-mini
 N8N_WEBHOOK_URL=
 N8N_SHARED_SECRET=replace-with-a-long-random-value
 SLACK_WEBHOOK_URL=
@@ -233,20 +231,13 @@ Stop local Supabase when finished:
 npx supabase stop
 ```
 
-## 6. Checkpoint 4: OpenAI locally
+## 6. Checkpoint 4: OpenAI in n8n
 
-Use a dedicated development project/key with a low spending limit. Put the key only in `.env.local`:
+Use a dedicated development project/key with a low spending limit. In n8n, create an OpenAI credential and connect it to **OpenAI Chat Model** in **AI Lead Qualification & Follow-Up**. The key belongs only in n8n's encrypted credential store; never put it in `.env.local`, the workflow JSON, or source code.
 
-```dotenv
-OPENAI_API_KEY=PASTE_DEVELOPMENT_PROJECT_KEY
-OPENAI_MODEL=gpt-4o-mini
-```
+Save and reactivate the workflow, then submit a fictional, valid, sufficiently complete lead. Confirm **Analyze qualitative lead signals** executes and `analysis.aiStatus` is `USED` in **Complete AI-qualified submission**, or in the `qualification_result` JSON in local Supabase Studio. The public response and lead-facing page must never expose this value.
 
-Restart Next.js after changing environment variables and submit a fictional, valid, sufficiently complete lead. Confirm `analysis.aiStatus` is `USED` in the **Process persisted submission** output in n8n, or in the `qualification_result` JSON in local Supabase Studio. The public response and lead-facing page must never expose this value. If the internal result says `FALLBACK`, check terminal output, model access, billing, and project limits.
-
-Then test failure safety: stop Next.js, temporarily set an invalid development key, restart, and submit another fictional lead. The lead must remain stored and route safely rather than disappearing. Restore the valid key immediately afterward.
-
-Never commit the key and never expose it through `NEXT_PUBLIC_*`.
+Then test failure safety by temporarily disconnecting the credential from the model node and executing a new fictional submission. The lead must remain stored and route to human review rather than disappearing. Reconnect the credential immediately afterward.
 
 ## 7. Slack locally (optional)
 

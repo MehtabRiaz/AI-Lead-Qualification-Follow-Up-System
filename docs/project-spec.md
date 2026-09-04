@@ -424,4 +424,4 @@ Do not claim conversion, productivity, or revenue improvement without real measu
 
 ## Current next step
 
-The V1 foundation now implements the decision pipeline, test fixtures, schema, public form, demo dashboard, structured AI adapter, and a versioned combined orchestration workflow. The remote workflow is published. The next operational step is to configure its application environment, apply the Supabase migration, and run the same acceptance suite against local and deployed environments.
+The V1 foundation now implements the decision pipeline, test fixtures, schema, public form, demo dashboard, an n8n Agent structured-analysis path, and a versioned combined orchestration workflow. The application validates agent output and retains deterministic ownership of scoring and routing. The next operational step is to connect the n8n OpenAI credential, configure the application environment, apply the Supabase migration, and run the same acceptance suite against local and deployed environments.

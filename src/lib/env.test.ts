@@ -10,7 +10,6 @@ describe("environment configuration", () => {
     vi.stubEnv("DATA_MODE", "demo");
     vi.stubEnv("SUPABASE_URL", "");
     vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "");
-    vi.stubEnv("OPENAI_API_KEY", "");
     vi.stubEnv("N8N_WEBHOOK_URL", "");
     vi.stubEnv("SLACK_WEBHOOK_URL", "");
 
@@ -19,7 +18,6 @@ describe("environment configuration", () => {
 
     expect(env.SUPABASE_URL).toBeUndefined();
     expect(env.SUPABASE_SERVICE_ROLE_KEY).toBeUndefined();
-    expect(env.OPENAI_API_KEY).toBeUndefined();
     expect(env.N8N_WEBHOOK_URL).toBeUndefined();
     expect(env.SLACK_WEBHOOK_URL).toBeUndefined();
   });

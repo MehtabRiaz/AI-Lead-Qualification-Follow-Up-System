@@ -1,14 +1,15 @@
 import { randomUUID } from "node:crypto";
 import { qualifyLead } from "@/domain/qualification";
-import { leadInputSchema, type LeadInput } from "@/domain/schemas";
-import type { LeadRepository } from "@/data/repository";
-import type { LeadAnalyzer } from "@/integrations/lead-analyzer";
+import {
+  aiAnalysisSchema,
+  leadInputSchema,
+  type AiAnalysis,
+  type LeadInput,
+} from "@/domain/schemas";
+import type { LeadRepository, SubmissionRecord } from "@/data/repository";
 
 export class LeadService {
-  constructor(
-    private readonly repository: LeadRepository,
-    private readonly analyzer: LeadAnalyzer,
-  ) {}
+  constructor(private readonly repository: LeadRepository) {}
 
   async acceptSubmission(raw: unknown, idempotencyKey: string) {
     const lead = leadInputSchema.parse(raw);
@@ -22,7 +23,51 @@ export class LeadService {
     });
   }
 
-  async processSubmission(id: string) {
+  async prepareSubmission(id: string) {
+    const record = await this.repository.findSubmission(id);
+    if (!record) throw new Error("SUBMISSION_NOT_FOUND");
+    if (
+      record.workflowStatus === "COMPLETED" ||
+      record.workflowStatus === "HUMAN_REVIEW"
+    )
+      return { analysisRequired: false as const, record };
+
+    const duplicate = await this.repository.findByEmail(
+      record.lead.workEmail,
+      record.id,
+    );
+    const duplicateState = duplicate ? "DUPLICATE_CONFIRMED" : "NEW";
+    const preflight = qualifyLead(record.lead, { duplicateState });
+    const analysisRequired =
+      preflight.gates.validation === "VALID" &&
+      duplicateState === "NEW" &&
+      preflight.gates.qualificationData !== "INSUFFICIENT";
+
+    if (analysisRequired)
+      return {
+        analysisRequired: true as const,
+        submissionId: record.id,
+        analysisInput: {
+          industry: record.lead.industry,
+          roleTitle: record.lead.roleTitle,
+          seniority: record.lead.seniority,
+          serviceNeeded: record.lead.serviceNeeded,
+          timeline: record.lead.timeline,
+          currentChallenge: record.lead.currentChallenge,
+          message: record.lead.message,
+        },
+      };
+
+    const updated = await this.persistResult(record, preflight);
+    return { analysisRequired: false as const, record: updated };
+  }
+
+  async completeSubmission(
+    id: string,
+    input:
+      | { aiAnalysis: AiAnalysis; aiFailureReason?: never }
+      | { aiAnalysis?: never; aiFailureReason: string },
+  ) {
     const record = await this.repository.findSubmission(id);
     if (!record) throw new Error("SUBMISSION_NOT_FOUND");
     if (
@@ -36,31 +81,29 @@ export class LeadService {
       record.id,
     );
     const duplicateState = duplicate ? "DUPLICATE_CONFIRMED" : "NEW";
-    const preflight = qualifyLead(record.lead, { duplicateState });
-    await this.repository.updateWorkflow(id, {
+    const result = input.aiAnalysis
+      ? qualifyLead(record.lead, {
+          duplicateState,
+          aiAnalysis: aiAnalysisSchema.parse(input.aiAnalysis),
+        })
+      : qualifyLead(record.lead, {
+          duplicateState,
+          aiFailureReason: input.aiFailureReason,
+        });
+
+    return this.persistResult(record, result);
+  }
+
+  private async persistResult(
+    record: SubmissionRecord,
+    result: ReturnType<typeof qualifyLead>,
+  ) {
+    await this.repository.updateWorkflow(record.id, {
       workflowStatus: "PROCESSING",
       attempts: record.attempts + 1,
       errorCode: null,
     });
-
-    let result = preflight;
-    if (
-      preflight.gates.validation === "VALID" &&
-      duplicateState === "NEW" &&
-      preflight.gates.qualificationData !== "INSUFFICIENT"
-    ) {
-      try {
-        const aiAnalysis = await this.analyzer.analyze(record.lead);
-        result = qualifyLead(record.lead, { duplicateState, aiAnalysis });
-      } catch {
-        result = qualifyLead(record.lead, {
-          duplicateState,
-          aiFailureReason: "AI_ANALYSIS_UNAVAILABLE",
-        });
-      }
-    }
-
-    return this.repository.updateWorkflow(id, {
+    return this.repository.updateWorkflow(record.id, {
       workflowStatus:
         result.routing.route === "HUMAN_REVIEW" ||
         result.routing.route === "VERIFY_IDENTITY"

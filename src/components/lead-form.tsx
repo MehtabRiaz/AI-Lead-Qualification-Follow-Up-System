@@ -14,7 +14,8 @@ export function LeadForm() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setState({ kind: "submitting" });
-    const data = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const data = new FormData(form);
     const numberOrNull = (name: string) =>
       data.get(name) ? Number(data.get(name)) : null;
     const body = {
@@ -52,7 +53,7 @@ export function LeadForm() {
       if (!response.ok || !result.accepted || !result.submissionId)
         throw new Error(result.message || "Please try again.");
       setState({ kind: "success", id: result.submissionId });
-      event.currentTarget.reset();
+      form.reset();
     } catch (error) {
       setState({
         kind: "error",

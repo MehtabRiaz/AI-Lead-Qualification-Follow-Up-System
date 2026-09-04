@@ -168,7 +168,9 @@ export class SupabaseLeadRepository implements LeadRepository {
             score: result.decision.score,
             result,
             prompt_version:
-              result.analysis.aiStatus === "USED" ? "lead-analysis-v1" : null,
+              result.analysis.aiStatus === "USED"
+                ? "n8n-agent-lead-analysis-v2"
+                : null,
           },
           { onConflict: "submission_id,version" },
         );

@@ -29,3 +29,9 @@
 **Decision:** Use one final n8n workflow for both development and production operations. The workflow contains independent intake, recovery, and follow-up trigger branches and calls the application selected by `APP_BASE_URL`.
 
 **Reason:** A single orchestration surface keeps the first n8n project understandable while preserving domain ownership in the application. Environment configuration selects the current application target without duplicating workflow logic.
+
+## 2026-09-04 — n8n-owned AI analysis
+
+**Decision:** Eligible qualitative lead analysis runs in an n8n AI Agent with an OpenAI Chat Model and structured output parser. The application exposes a deterministic preparation step, validates returned agent output with Zod, and remains solely responsible for scoring, gates, routing, and persistence.
+
+**Reason:** The automation visibly owns the AI operation while the application continues to enforce deterministic business rules and a provider-independent trust boundary. Intake and recovery use the same agent path, and malformed or unavailable AI output routes safely to human review.

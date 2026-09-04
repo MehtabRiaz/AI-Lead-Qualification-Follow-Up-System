@@ -10,9 +10,10 @@ Before starting, complete every applicable checkpoint in the [local setup and te
 2. Vercel validates and persists the lead in Supabase.
 3. Vercel calls the production n8n webhook on Railway.
 4. n8n calls a protected internal Vercel endpoint.
-5. Vercel calls OpenAI server-side, stores the result in Supabase, and returns it to n8n.
-6. n8n optionally posts the result to Slack.
-7. The Vercel dashboard reads recent results from Supabase.
+5. n8n runs eligible qualitative analysis through its AI Agent and OpenAI Chat Model.
+6. Vercel validates the structured output, completes deterministic qualification, and stores the result in Supabase.
+7. n8n optionally posts the result to Slack.
+8. The Vercel dashboard reads recent results from Supabase.
 
 The services must be wired in both directions:
 
@@ -80,10 +81,10 @@ Official reference: [Supabase CLI](https://supabase.com/docs/reference/cli/supab
 
 1. In the OpenAI API Platform, create or select a dedicated project for this application.
 2. Enable billing/add credits and configure project usage limits and alerts for the expected volume.
-3. Create a project API key and save it once as `OPENAI_API_KEY`. Store it only on Vercel—not in Railway, Slack, source code, or a browser variable.
-4. Set `OPENAI_MODEL` to a model available to the project. The repository default is `gpt-4o-mini`. If unavailable, choose a model that supports the structured response used by the application and run the smoke test below.
+3. Create a project API key and save it once. Add it to an n8n OpenAI credential; do not store it in Vercel, Railway environment variables, Slack, source code, or a browser variable.
+4. Connect that credential to **OpenAI Chat Model** in the imported workflow. The workflow defaults to `gpt-5-mini`. If unavailable, choose a compatible model in the node and run the smoke test below.
 
-Without the key, the application deliberately uses a deterministic fallback. A successful deployment alone does not prove OpenAI is active; inspect the smoke-test result for AI-backed processing.
+Without a connected credential, the n8n Agent cannot analyze eligible records. Its failure path must retain the submission and route it safely for human review. A successful deployment alone does not prove OpenAI is active; inspect the smoke-test result for AI-backed processing.
 
 Official references: [OpenAI quickstart](https://platform.openai.com/docs/quickstart) and [API authentication](https://platform.openai.com/docs/api-reference/authentication).
 
@@ -120,8 +121,6 @@ Official reference: [Slack incoming webhooks](https://docs.slack.dev/messaging/s
 | `NEXT_PUBLIC_DEMO_MODE`     | `false`                                | No      |
 | `SUPABASE_URL`              | Supabase project URL                   | No      |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase secret/service-role key       | Yes     |
-| `OPENAI_API_KEY`            | OpenAI project API key                 | Yes     |
-| `OPENAI_MODEL`              | Tested model, initially `gpt-4o-mini`  | No      |
 | `N8N_SHARED_SECRET`         | First generated 64-character hex value | Yes     |
 
 Do not set `SLACK_WEBHOOK_URL` on Vercel. Do not put any secret in a `NEXT_PUBLIC_*` variable.
@@ -165,7 +164,7 @@ Official reference: [Railway self-host n8n guide](https://docs.railway.com/guide
 
 Use **Import from File** in n8n for `automation/n8n/workflows/ai-lead-qualification-follow-up.json`.
 
-Confirm their expressions reference `$env.APP_BASE_URL`, `$env.N8N_SHARED_SECRET`, and (only in the optional node) `$env.SLACK_WEBHOOK_URL`.
+Confirm the workflow references `APP_BASE_URL`, `N8N_SHARED_SECRET`, and the optional `SLACK_WEBHOOK_URL`. On n8n Cloud, configure them as `$vars`; self-hosted n8n may supply the same names through `$env`. The expressions support either source. Connect the OpenAI credential to **OpenAI Chat Model**; the credential is intentionally absent from the portable JSON.
 
 Activate **AI Lead Qualification & Follow-Up**. Its production intake URL is:
 
@@ -187,7 +186,7 @@ Return to Vercel and add this Production variable:
 
 Redeploy Vercel. Environment-variable changes do not affect an already-running deployment until redeployed.
 
-Now Vercel knows Railway; Railway knows Vercel; both share `N8N_SHARED_SECRET`; only Vercel holds Supabase/OpenAI secrets; and only Railway holds the Slack webhook and n8n encryption key.
+Now Vercel knows Railway; Railway knows Vercel; both share `N8N_SHARED_SECRET`; Vercel holds only Supabase secrets; n8n's encrypted credential store holds the OpenAI key; and Railway holds the Slack webhook and n8n encryption key.
 
 ## 12. Production smoke test
 
@@ -255,7 +254,7 @@ In Supabase, verify one `lead_submissions` row, a related `qualification_results
 
 ### AI always uses fallback
 
-- Confirm the key and model exist in Vercel Production, then redeploy.
+- Confirm the OpenAI credential is connected to **OpenAI Chat Model** and the selected model is available, then republish the workflow.
 - Check OpenAI billing, project limits/usage, model access, and Vercel logs.
 
 ### n8n data disappears

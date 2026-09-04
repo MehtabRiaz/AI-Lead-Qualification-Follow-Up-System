@@ -80,7 +80,7 @@ Deterministic rules remain responsible for validation, scoring, routing preceden
 - **Frontend:** Next.js and TypeScript
 - **Database:** Supabase and PostgreSQL
 - **Automation:** n8n
-- **AI:** OpenAI structured outputs
+- **AI:** n8n AI Agent with OpenAI and structured output validation
 - **Notifications:** Slack
 - **Deployment:** Vercel, Supabase, and Docker
 
