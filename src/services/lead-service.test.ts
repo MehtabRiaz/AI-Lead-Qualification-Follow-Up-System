@@ -41,7 +41,9 @@ const aiAnalysis: AiAnalysis = {
 
 describe("n8n-owned lead analysis contract", () => {
   it("prepares an eligible submission without analyzing it in the application", async () => {
-    const service = new LeadService(new DemoLeadRepository());
+    const service = new LeadService(new DemoLeadRepository(), {
+      aiAnalysisEnabled: true,
+    });
     const accepted = await service.acceptSubmission(
       lead,
       "agent-contract-prepare",
@@ -55,6 +57,24 @@ describe("n8n-owned lead analysis contract", () => {
         lead.currentChallenge,
       );
       expect("monthlyAdSpendUsd" in prepared.analysisInput).toBe(false);
+    }
+  });
+
+  it("completes deterministically without requesting AI when disabled", async () => {
+    const service = new LeadService(new DemoLeadRepository(), {
+      aiAnalysisEnabled: false,
+    });
+    const accepted = await service.acceptSubmission(
+      { ...lead, workEmail: "workflow-ai-disabled@example.dev" },
+      "agent-contract-disabled",
+    );
+
+    const prepared = await service.prepareSubmission(accepted.record.id);
+
+    expect(prepared.analysisRequired).toBe(false);
+    if (!prepared.analysisRequired) {
+      expect(prepared.record.result?.analysis.aiStatus).toBe("SKIPPED");
+      expect(prepared.record.errorCode).toBeNull();
     }
   });
 

@@ -16,10 +16,20 @@ describe("environment configuration", () => {
     const { getEnv } = await import("./env");
     const env = getEnv();
 
+    expect(env.AI_ANALYSIS_ENABLED).toBe(false);
     expect(env.SUPABASE_URL).toBeUndefined();
     expect(env.SUPABASE_SERVICE_ROLE_KEY).toBeUndefined();
     expect(env.N8N_WEBHOOK_URL).toBeUndefined();
     expect(env.SLACK_WEBHOOK_URL).toBeUndefined();
+  });
+
+  it("enables analysis only through the explicit boolean flag", async () => {
+    vi.stubEnv("DATA_MODE", "demo");
+    vi.stubEnv("AI_ANALYSIS_ENABLED", "true");
+
+    const { getEnv } = await import("./env");
+
+    expect(getEnv().AI_ANALYSIS_ENABLED).toBe(true);
   });
 
   it("still requires Supabase credentials in Supabase mode", async () => {

@@ -9,6 +9,10 @@ const optionalString = (schema: z.ZodString) =>
 
 const envSchema = z.object({
   DATA_MODE: z.enum(["demo", "supabase"]).default("demo"),
+  AI_ANALYSIS_ENABLED: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((value) => value === "true"),
   SUPABASE_URL: optionalString(z.string().url()),
   SUPABASE_SERVICE_ROLE_KEY: optionalString(z.string().min(1)),
   N8N_WEBHOOK_URL: optionalString(z.string().url()),

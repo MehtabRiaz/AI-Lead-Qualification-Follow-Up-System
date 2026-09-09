@@ -35,3 +35,9 @@
 **Decision:** Eligible qualitative lead analysis runs in an n8n AI Agent with an OpenAI Chat Model and structured output parser. The application exposes a deterministic preparation step, validates returned agent output with Zod, and remains solely responsible for scoring, gates, routing, and persistence.
 
 **Reason:** The automation visibly owns the AI operation while the application continues to enforce deterministic business rules and a provider-independent trust boundary. Intake and recovery use the same agent path, and malformed or unavailable AI output routes safely to human review.
+
+## 2026-09-09 — Explicit AI analysis feature switch
+
+**Decision:** AI analysis is disabled by default and may be enabled only with `AI_ANALYSIS_ENABLED=true`. The application owns this capability switch and returns a completed deterministic result with `aiStatus: SKIPPED`; n8n therefore bypasses its Agent branch without treating the absence of AI as a provider failure.
+
+**Reason:** The deployed portfolio must run cleanly without OpenAI billing while retaining a reversible path to n8n-owned structured analysis. Deterministic gates, scoring, routing, persistence, and audit behavior remain unchanged.

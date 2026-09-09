@@ -84,7 +84,7 @@ Official reference: [Supabase CLI](https://supabase.com/docs/reference/cli/supab
 3. Create a project API key and save it once. Add it to an n8n OpenAI credential; do not store it in Vercel, Railway environment variables, Slack, source code, or a browser variable.
 4. Connect that credential to **OpenAI Chat Model** in the imported workflow. The workflow defaults to `gpt-5-mini`. If unavailable, choose a compatible model in the node and run the smoke test below.
 
-Without a connected credential, the n8n Agent cannot analyze eligible records. Its failure path must retain the submission and route it safely for human review. A successful deployment alone does not prove OpenAI is active; inspect the smoke-test result for AI-backed processing.
+With `AI_ANALYSIS_ENABLED=false`, the application completes deterministic qualification and n8n skips the Agent branch. If analysis is enabled without a working credential, the failure path retains the submission and routes it safely for human review. A successful deployment alone does not prove OpenAI is active; inspect the smoke-test result for AI-backed processing.
 
 Official references: [OpenAI quickstart](https://platform.openai.com/docs/quickstart) and [API authentication](https://platform.openai.com/docs/api-reference/authentication).
 
@@ -119,6 +119,7 @@ Official reference: [Slack incoming webhooks](https://docs.slack.dev/messaging/s
 | --------------------------- | -------------------------------------- | ------- |
 | `DATA_MODE`                 | `supabase`                             | No      |
 | `NEXT_PUBLIC_DEMO_MODE`     | `false`                                | No      |
+| `AI_ANALYSIS_ENABLED`       | `false` (set `true` only when desired) | No      |
 | `SUPABASE_URL`              | Supabase project URL                   | No      |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase secret/service-role key       | Yes     |
 | `N8N_SHARED_SECRET`         | First generated 64-character hex value | Yes     |

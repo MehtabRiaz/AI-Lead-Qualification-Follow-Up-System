@@ -9,7 +9,12 @@ import {
 import type { LeadRepository, SubmissionRecord } from "@/data/repository";
 
 export class LeadService {
-  constructor(private readonly repository: LeadRepository) {}
+  constructor(
+    private readonly repository: LeadRepository,
+    private readonly options: { aiAnalysisEnabled: boolean } = {
+      aiAnalysisEnabled: false,
+    },
+  ) {}
 
   async acceptSubmission(raw: unknown, idempotencyKey: string) {
     const lead = leadInputSchema.parse(raw);
@@ -39,6 +44,7 @@ export class LeadService {
     const duplicateState = duplicate ? "DUPLICATE_CONFIRMED" : "NEW";
     const preflight = qualifyLead(record.lead, { duplicateState });
     const analysisRequired =
+      this.options.aiAnalysisEnabled &&
       preflight.gates.validation === "VALID" &&
       duplicateState === "NEW" &&
       preflight.gates.qualificationData !== "INSUFFICIENT";
