@@ -4,7 +4,7 @@ A production-minded automation for capturing, validating, qualifying, routing, a
 
 The project demonstrates how deterministic business rules and structured AI outputs can work together without handing critical sales decisions entirely to an LLM.
 
-> **Status:** In progress · **Priority:** High · **Type:** Mock portfolio build
+> **Status:** Completed · **Priority:** High · **Type:** Mock portfolio build
 >
 > The detailed requirements, decision rules, test scenarios, and output contract are documented in [`docs/project-spec.md`](docs/project-spec.md). The source specification is maintained in [Notion](https://app.notion.com/p/3c4625677e33812eb756d45611bc3fe4).
 
@@ -14,7 +14,7 @@ Turn incoming marketing-agency leads into qualified, actionable opportunities wi
 
 The fictional client is **Northstar Growth**, a US performance-marketing agency serving B2B, SaaS, and e-commerce companies seeking paid acquisition or growth-marketing support.
 
-## Planned workflow
+## Implemented workflow
 
 1. Capture a lead from a web form or webhook.
 2. Validate and normalize the submitted data.
@@ -75,7 +75,7 @@ AI is used where interpretation is useful:
 
 Deterministic rules remain responsible for validation, scoring, routing precedence, follow-up timing, and stop conditions.
 
-## Planned technology stack
+## Technology stack
 
 - **Frontend:** Next.js and TypeScript
 - **Database:** Supabase and PostgreSQL
@@ -121,11 +121,17 @@ The decision model is designed around ten representative scenarios, including:
 - Duplicate submissions
 - Consultative opportunities with ambiguous buying intent
 
-These scenarios will be converted into automated fixtures to verify that changes to the qualification engine do not alter expected routing behavior unintentionally.
+These scenarios are implemented as automated fixtures to verify that changes to the qualification engine do not alter expected routing behavior unintentionally.
 
 ## Project status
 
 The requirements, test scenarios, decision gates, scoring dimensions, routing precedence, and canonical qualification output contract have been implemented as a runnable V1 foundation.
+
+Portfolio documentation:
+
+- [Technical review](docs/technical-review.md)
+- [Case study](docs/case-study.md)
+- [LinkedIn launch pack](docs/linkedin-launch.md)
 
 ## Run locally
 
