@@ -180,14 +180,13 @@
       "parameters": {
         "modelName": {
           "__rl": true,
-          "value": "gpt-5-mini",
+          "value": "gpt-4.1-mini",
           "mode": "list",
-          "cachedResultName": "gpt-5-mini"
+          "cachedResultName": "gpt-4.1-mini"
         },
         "responsesApiEnabled": true,
         "options": {
           "maxTokens": 700,
-          "temperature": 0.1,
           "timeout": 15000,
           "maxRetries": 2
         }
